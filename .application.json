@@ -1,0 +1,10 @@
+{
+    "DeploymentMethod": "lambda",
+    "Functions": {
+        "ListSatellites": {
+            "PhysicalId": {
+                "us-east-1": "ListSatellites"
+            }
+        }
+    }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "alexa-skill-list-satellites",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "request-promise": "^4.2.2",
+    "request":"^2.34"
+  }
+}

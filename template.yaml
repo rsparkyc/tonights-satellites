@@ -1,0 +1,13 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: An AWS Serverless Specification template describing your function.
+Resources:
+  ListSatellites:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Description: Demonstrate a basic trivia skill built with the ASK NodeJS SDK
+      Handler: index.handler
+      MemorySize: 128
+      Role: 'arn:aws:iam::534367582159:role/service-role/ListSatellitesRole'
+      Runtime: nodejs6.10
+      Timeout: 7
