@@ -1,11 +1,6 @@
 const Alexa = require('alexa-sdk');
 var request = require("request-promise");
 
-
-//Replace with your app ID (OPTIONAL).  You can find this value at the top of your skill's page on http://developer.amazon.com.
-//Make sure to enclose your value in quotes, like this: const APP_ID = 'amzn1.ask.skill.bb4045e6-b3e8-4133-b650-72923c5980f1';
-const APP_ID = undefined;
-
 let currentEvent;
 
 exports.handler = function(event, context, callback) {
@@ -21,12 +16,8 @@ exports.handler = function(event, context, callback) {
 
 const handlers = {
     'LaunchRequest': function () {
-        this.emit('GetNewFactIntent');
-    },
-    'GetNewFactIntent': function () {
-
-        this.response.speak("hello");
-        this.emit(':responseReady');
+        this.response.speak("Launch Request");
+        this.emit('ListSatellites');
     },
     'AMAZON.HelpIntent': function () {
         const speechOutput = "You're haven's dad, aren't you.  You don't need help.";
@@ -46,19 +37,26 @@ const handlers = {
     'ListSatellites': function() {
 
     	let url = "https://api.amazonalexa.com/v1/devices/" +
-    	currentEvent.context.System.device.deviceId + 
-    	"/settings/address";
+    	currentEvent.context.System.device.deviceId +  "/settings/address";
     	console.log("building request to " + url);
-    	
     	request.get({ 
         	    url: url, 
         	    json: true,
         	    headers: {
                     Authorization: 'Bearer '+ currentEvent.context.System.apiAccessToken
-                }
+                },
+                simple: false
         	}).then((result) => {
-        	    console.log("Google API key: " + process.env.googleApiKey);
-        	    let googleUrl = "https://maps.googleapis.com/maps/api/geocode/json?address="+
+        	    console.log("Result of device address call: " + JSON.stringify(result));
+        	    if (!result.postalCode && !result.addressLine1) {
+        	        console.warn("Could not get address, default to my address");
+        	        result.addressLine1 = "369 Eagle Rock Drive";
+        	        result.city="Acworth";
+        	        result.stateOrRegion="Georgia";
+        	        result.countryCode="USA";
+        	        result.postalCode="30101";
+        	    }
+        	    let googleUrl = "https://maps.googleapis.com/maps/api/geocode/json?address=" +
         	    encodeURI(
         	        getPart(result.addressLine1) +
         	        getPart(result.addressLine2) +
@@ -77,9 +75,28 @@ const handlers = {
         	    console.log("Google Response: " + JSON.stringify(result));
         	    let lat = result.results[0].geometry.location.lat;
         	    let lng = result.results[0].geometry.location.lng;
-        	    
-				this.response.speak("Your coordinates are " + lat + " by " + lng);
-			    	this.emit(':responseReady');
+        	    return {lat:lat,lng:lng};
+        	}).then((coords) => {
+        	    let haUrl = "http://www.heavens-above.com/AllSats.aspx?lat=" + coords.lat + "&lng=" + coords.lngls;
+        	}).then((haResult) => {
+				//let speechOutput = "Your coordinates are " + coords.lat  + " by " + coords.lng;
+				let cardTitle = "Tonight's Satellites";
+				//let cardContent = `[${coords.lat}, ${coords.lng}]`;
+				var imageObj = {
+                    smallImageUrl: 'https://www.heavens-above.com/PassSkyChart2.ashx?passID=32384&size=480&lat=34.0638&lng=-84.7688&loc=369+Eagle+Rock+Dr%2c+Acworth%2c+GA+30101%2c+USA&alt=283&tz=EST&showUnlit=false',
+                    largeImageUrl: 'https://www.heavens-above.com/PassSkyChart2.ashx?passID=32384&size=800&lat=34.0638&lng=-84.7688&loc=369+Eagle+Rock+Dr%2c+Acworth%2c+GA+30101%2c+USA&alt=283&tz=EST&showUnlit=false'
+                };
+                
+                /*
+				var imageObj = {
+                    smallImageUrl: 'https://imgs.xkcd.com/comics/standards.png',
+                    largeImageUrl: 'https://imgs.xkcd.com/comics/standards.png',
+                };
+                */
+    				
+		    	//this.emit(':responseReady');
+		    	this.emit(':tellWithCard', speechOutput, cardTitle, cardContent, imageObj);
+
 			}).catch((err) => {
 				this.response.speak("There was a problem.  Please make sure " +
 				"you've configured this skill to have access to your address. " +
